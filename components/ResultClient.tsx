@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { calcProfits } from "@/lib/profit";
+import { suggestShipping } from "@/lib/shipping";
 import type { AiResult, PriceData, PlatformProfit } from "@/types";
 import { CONDITION_MULTIPLIER } from "@/types";
 
@@ -33,15 +34,43 @@ export default function ResultClient() {
   const [shippingCost, setShippingCost] = useState("500");
   const [profits, setProfits] = useState<PlatformProfit[]>([]);
 
-  useEffect(() => {
-    const ai = sessionStorage.getItem("aiResult");
-    const img = sessionStorage.getItem("imageUrl");
-    if (!ai) { router.push("/"); return; }
-    const parsed: AiResult = JSON.parse(ai);
-    setAiResult(parsed);
-    setImageUrl(img);
+  // save state
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-    fetch(`/api/price?q=${encodeURIComponent(parsed.searchQuery)}`)
+  const saveScan = async () => {
+    if (!aiResult || saving || saved) return;
+    setSaving(true);
+    const bestProfit = profits.reduce((best, p) => p.profit > best.profit ? p : best, profits[0]);
+    await fetch("/api/scans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aiResult,
+        priceData,
+        medianPrice: priceData?.median ?? null,
+        purchasePrice: parseInt(purchasePrice) || null,
+        shippingCost: parseInt(shippingCost) || null,
+        profit: bestProfit?.profit ?? null,
+        profitRate: bestProfit?.profitRate ?? null,
+        imageUrl,
+      }),
+    });
+    setSaving(false);
+    setSaved(true);
+  };
+
+  // edit state
+  const [editing, setEditing] = useState(false);
+  const [editBrand, setEditBrand] = useState("");
+  const [editModel, setEditModel] = useState("");
+  const [editCondition, setEditCondition] = useState<AiResult["condition"]>("B");
+  const [editQuery, setEditQuery] = useState("");
+
+  const fetchPrice = (query: string) => {
+    setPriceLoading(true);
+    setPriceError(null);
+    fetch(`/api/price?q=${encodeURIComponent(query)}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setPriceError(data.error);
@@ -49,6 +78,22 @@ export default function ResultClient() {
       })
       .catch(() => setPriceError("相場取得に失敗しました"))
       .finally(() => setPriceLoading(false));
+  };
+
+  useEffect(() => {
+    const ai = sessionStorage.getItem("aiResult");
+    const img = sessionStorage.getItem("imageUrl");
+    if (!ai) { router.push("/"); return; }
+    const parsed: AiResult = JSON.parse(ai);
+    setAiResult(parsed);
+    setImageUrl(img);
+    setEditBrand(parsed.brand);
+    setEditModel(parsed.model);
+    setEditCondition(parsed.condition);
+    setEditQuery(parsed.searchQuery);
+    setShippingCost(String(suggestShipping(parsed.category, parsed.model)));
+    fetchPrice(parsed.searchQuery);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   useEffect(() => {
@@ -56,8 +101,17 @@ export default function ResultClient() {
     const base = priceData.median;
     const purchase = parseInt(purchasePrice) || 0;
     const shipping = parseInt(shippingCost) || 0;
-    setProfits(calcProfits(base, aiResult.condition, purchase, shipping));
-  }, [priceData, aiResult, purchasePrice, shippingCost]);
+    setProfits(calcProfits(base, editCondition, purchase, shipping));
+  }, [priceData, aiResult, editCondition, purchasePrice, shippingCost]);
+
+  const applyEdit = () => {
+    if (!aiResult) return;
+    const updated: AiResult = { ...aiResult, brand: editBrand, model: editModel, condition: editCondition, searchQuery: editQuery };
+    setAiResult(updated);
+    sessionStorage.setItem("aiResult", JSON.stringify(updated));
+    setEditing(false);
+    fetchPrice(editQuery);
+  };
 
   if (!aiResult) return null;
 
@@ -94,7 +148,80 @@ export default function ResultClient() {
               <p className="text-sm text-slate-600 truncate">{aiResult.model}</p>
               <p className="text-xs text-slate-400 mt-1">{aiResult.color} / {aiResult.conditionNote}</p>
             </div>
+            <button
+              onClick={() => setEditing((e) => !e)}
+              className="self-start text-slate-400 hover:text-orange-500 transition-colors p-1"
+              aria-label="編集"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-6 6h6" />
+              </svg>
+            </button>
           </div>
+
+          {editing && (
+            <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500">ブランド</label>
+                <input
+                  type="text"
+                  value={editBrand}
+                  onChange={(e) => setEditBrand(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500">モデル名</label>
+                <input
+                  type="text"
+                  value={editModel}
+                  onChange={(e) => setEditModel(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500">コンディション</label>
+                <div className="flex gap-2">
+                  {(["S", "A", "B", "C", "D"] as AiResult["condition"][]).map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setEditCondition(c)}
+                      className={`flex-1 py-1.5 rounded-xl text-sm font-bold border transition-colors ${
+                        editCondition === c
+                          ? "border-orange-400 bg-orange-50 text-orange-600"
+                          : "border-slate-200 text-slate-500 hover:border-orange-300"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500">検索キーワード</label>
+                <input
+                  type="text"
+                  value={editQuery}
+                  onChange={(e) => setEditQuery(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setEditing(false)}
+                  className="flex-1 py-2 border border-slate-200 text-slate-500 rounded-xl text-sm hover:bg-slate-50 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={applyEdit}
+                  className="flex-1 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
+                >
+                  再検索
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 相場カード */}
@@ -156,7 +283,10 @@ export default function ResultClient() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-600 w-24 flex-shrink-0">送料</label>
+              <label className="text-sm text-slate-600 w-24 flex-shrink-0">
+                送料
+                <span className="block text-xs text-orange-400 font-normal">自動提案</span>
+              </label>
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">¥</span>
                 <input
@@ -189,12 +319,31 @@ export default function ResultClient() {
           )}
         </div>
 
-        {/* もう一度ボタン */}
+        {/* アクションボタン */}
+        <div className="flex gap-3">
+          <button
+            onClick={saveScan}
+            disabled={saving || saved}
+            className={`flex-1 py-3.5 font-bold rounded-2xl transition-colors border ${
+              saved
+                ? "border-green-400 text-green-600 bg-green-50"
+                : "border-orange-400 text-orange-500 hover:bg-orange-50"
+            }`}
+          >
+            {saved ? "保存済み ✓" : saving ? "保存中..." : "履歴に保存"}
+          </button>
+          <button
+            onClick={() => router.push("/")}
+            className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-colors"
+          >
+            もう一品スキャン
+          </button>
+        </div>
         <button
-          onClick={() => router.push("/")}
-          className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-colors"
+          onClick={() => router.push("/history")}
+          className="w-full py-2 text-sm text-slate-400 hover:text-orange-500 transition-colors"
         >
-          もう一品スキャン
+          スキャン履歴を見る →
         </button>
       </div>
     </main>

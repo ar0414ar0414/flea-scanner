@@ -1,14 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
+import Link from "next/link";
+
+const BarcodeScanner = lazy(() => import("./BarcodeScanner"));
 
 export default function ScannerHome() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [showBarcode, setShowBarcode] = useState(false);
 
   const handleFile = async (file: File) => {
     setLoading(true);
@@ -38,6 +42,11 @@ export default function ScannerHome() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 pb-12">
+      {showBarcode && (
+        <Suspense fallback={null}>
+          <BarcodeScanner onClose={() => setShowBarcode(false)} />
+        </Suspense>
+      )}
       {/* ヘッダー */}
       <div className="text-center mb-10">
         <div className="text-5xl mb-3">🔍</div>
@@ -87,20 +96,29 @@ export default function ScannerHome() {
         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
       />
 
-      {/* ギャラリーボタン */}
+      {/* サブアクション */}
       {!loading && !preview && (
-        <button
-          onClick={() => {
-            if (inputRef.current) {
-              inputRef.current.removeAttribute("capture");
-              inputRef.current.click();
-              setTimeout(() => inputRef.current?.setAttribute("capture", "environment"), 500);
-            }
-          }}
-          className="mt-4 text-slate-500 text-sm underline underline-offset-2"
-        >
-          ギャラリーから選ぶ
-        </button>
+        <div className="mt-4 flex items-center gap-4">
+          <button
+            onClick={() => {
+              if (inputRef.current) {
+                inputRef.current.removeAttribute("capture");
+                inputRef.current.click();
+                setTimeout(() => inputRef.current?.setAttribute("capture", "environment"), 500);
+              }
+            }}
+            className="text-slate-500 text-sm underline underline-offset-2"
+          >
+            ギャラリーから選ぶ
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={() => setShowBarcode(true)}
+            className="text-slate-500 text-sm underline underline-offset-2"
+          >
+            バーコードスキャン
+          </button>
+        </div>
       )}
 
       {/* 使い方 */}
@@ -118,6 +136,10 @@ export default function ScannerHome() {
           </div>
         ))}
       </div>
+
+      <Link href="/history" className="mt-8 text-sm text-slate-400 hover:text-orange-500 transition-colors">
+        スキャン履歴を見る →
+      </Link>
     </main>
   );
 }
