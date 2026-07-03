@@ -7,6 +7,7 @@ export type AiResult = {
   conditionNote: string;
   keywords: string[];
   searchQuery: string;
+  priceTag?: number | null; // 写真に値札が写っていた場合の販売価格
 };
 
 export type PriceData = {

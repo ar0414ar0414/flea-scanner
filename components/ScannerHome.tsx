@@ -120,7 +120,7 @@ export default function ScannerHome() {
               </span>
               <div className="text-center">
                 <p className="font-bold text-slate-700">タップして撮影</p>
-                <p className="text-xs mt-1 text-slate-400">商品にカメラを向けるだけ</p>
+                <p className="text-xs mt-1 text-slate-400">値札も一緒に写すと仕入値も自動入力</p>
               </div>
             </div>
           )}

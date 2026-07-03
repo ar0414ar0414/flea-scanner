@@ -34,6 +34,7 @@ export default function ResultClient() {
   const [priceLoading, setPriceLoading] = useState(true);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [priceTagFilled, setPriceTagFilled] = useState(false);
   const [shippingCost, setShippingCost] = useState("500");
   const [profits, setProfits] = useState<PlatformProfit[]>([]);
   const [buyScore, setBuyScore] = useState<BuyScore | null>(null);
@@ -127,6 +128,10 @@ export default function ResultClient() {
     setEditCondition(parsed.condition);
     setEditQuery(parsed.searchQuery);
     setShippingCost(String(suggestShipping(parsed.category, parsed.model)));
+    if (typeof parsed.priceTag === "number" && parsed.priceTag > 0) {
+      setPurchasePrice(String(parsed.priceTag));
+      setPriceTagFilled(true);
+    }
     fetchPrice(parsed.searchQuery);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
@@ -396,15 +401,22 @@ export default function ResultClient() {
 
           <div className="space-y-3 mb-4">
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-600 w-24 flex-shrink-0">仕入値</label>
+              <label className="text-sm text-slate-600 w-24 flex-shrink-0">
+                仕入値
+                {priceTagFilled && (
+                  <span className="block text-xs text-green-600 font-bold">値札を読取済</span>
+                )}
+              </label>
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">¥</span>
                 <input
                   type="number"
                   value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
+                  onChange={(e) => { setPurchasePrice(e.target.value); setPriceTagFilled(false); }}
                   placeholder="0"
-                  className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  className={`w-full pl-8 pr-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 ${
+                    priceTagFilled ? "border-green-300 bg-green-50/50" : "border-slate-200"
+                  }`}
                 />
               </div>
             </div>
