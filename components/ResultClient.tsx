@@ -6,6 +6,7 @@ import { calcProfits, calcBreakeven } from "@/lib/profit";
 import { suggestShipping } from "@/lib/shipping";
 import { calcBuyScore, type BuyScore } from "@/lib/buyScore";
 import { toast } from "@/lib/toast";
+import { ChevronLeft, BarChart3, Store, Calculator, Target, Pencil, ShoppingCart, Lightbulb, ScanLine, Check } from "lucide-react";
 import type { AiResult, PriceData, PlatformProfit } from "@/types";
 import { CONDITION_MULTIPLIER, PLATFORM_PRICE_RATIO } from "@/types";
 
@@ -178,18 +179,16 @@ export default function ResultClient() {
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
       {/* トップバー */}
-      <div className="sticky top-0 bg-white border-b border-slate-200 z-10 px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.push("/")} className="text-slate-500 hover:text-slate-800">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+      <div className="sticky top-0 bg-white/85 backdrop-blur-xl border-b border-slate-200/70 z-10 px-4 py-3 flex items-center gap-3">
+        <button onClick={() => router.push("/")} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors">
+          <ChevronLeft size={22} />
         </button>
-        <h1 className="font-bold text-slate-800">解析結果</h1>
+        <h1 className="font-bold text-slate-800 tracking-tight">解析結果</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
         {/* 商品情報カード */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
           <div className="flex gap-4 p-4">
             {imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -209,9 +208,7 @@ export default function ResultClient() {
               className="self-start text-slate-400 hover:text-orange-500 transition-colors p-1"
               aria-label="編集"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-6 6h6" />
-              </svg>
+              <Pencil size={18} />
             </button>
           </div>
 
@@ -281,9 +278,10 @@ export default function ResultClient() {
         </div>
 
         {/* 相場カード */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <span>📊</span> ヤフオク落札相場
+        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-4">
+          <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2.5 tracking-tight">
+            <span className="w-8 h-8 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center"><BarChart3 size={16} /></span>
+            ヤフオク落札相場
           </h2>
           {priceLoading ? (
             <div className="flex items-center gap-2 text-slate-400 text-sm">
@@ -347,9 +345,10 @@ export default function ResultClient() {
 
         {/* ⑤ プラットフォーム別推定相場カード */}
         {platformPrices.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h2 className="font-bold text-slate-700 mb-1 flex items-center gap-2">
-              <span>🏪</span> プラットフォーム別推定相場
+          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-4">
+            <h2 className="font-bold text-slate-800 mb-1 flex items-center gap-2.5 tracking-tight">
+              <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Store size={16} /></span>
+              プラットフォーム別推定相場
             </h2>
             <p className="text-xs text-slate-400 mb-3">ヤフオク落札実績を基準とした出品価格の目安</p>
             <div className="grid grid-cols-2 gap-2">
@@ -364,16 +363,17 @@ export default function ResultClient() {
         )}
 
         {/* 利益計算カード */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-            <span>💴</span> 利益計算
+        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-4">
+          <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2.5 tracking-tight">
+            <span className="w-8 h-8 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"><Calculator size={16} /></span>
+            利益計算
           </h2>
 
           {/* ⑬ 仕入れ上限の目安 */}
           {breakeven && (
             <div className="bg-orange-50 rounded-xl p-3 mb-4">
-              <p className="text-xs font-medium text-orange-600 mb-2">
-                💡 仕入れ上限の目安（{breakeven.platform}で売る場合・タップで入力）
+              <p className="text-xs font-bold text-orange-600 mb-2 flex items-center gap-1.5">
+                <Lightbulb size={13} /> 仕入れ上限の目安（{breakeven.platform}で売る場合・タップで入力）
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -447,9 +447,10 @@ export default function ResultClient() {
 
         {/* ⑧ 買い時スコアカード */}
         {buyScore && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-              <span>🎯</span> 買い時スコア
+          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-4">
+            <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2.5 tracking-tight">
+              <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center"><Target size={16} /></span>
+              買い時スコア
             </h2>
             <div className="flex items-center gap-4 mb-3">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-black flex-shrink-0 ${GRADE_COLOR[buyScore.grade]}`}>
@@ -489,7 +490,9 @@ export default function ResultClient() {
                 : "border-green-400 text-green-600 bg-white hover:bg-green-50"
             }`}
           >
-            {purchased ? "仕入れ済み ✓（タップで取消）" : "🛒 この商品を仕入れた"}
+            <span className="flex items-center justify-center gap-2">
+              {purchased ? <><Check size={18} strokeWidth={3} /> 仕入れ済み（タップで取消）</> : <><ShoppingCart size={18} /> この商品を仕入れた</>}
+            </span>
           </button>
         )}
 
@@ -508,9 +511,9 @@ export default function ResultClient() {
           </button>
           <button
             onClick={() => router.push("/")}
-            className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-colors"
+            className="flex-1 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/25 active:scale-[0.98]"
           >
-            もう一品スキャン
+            <span className="flex items-center justify-center gap-2"><ScanLine size={18} /> もう一品スキャン</span>
           </button>
         </div>
         <button

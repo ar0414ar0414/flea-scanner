@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, Star, Trash2, ShoppingCart, Camera } from "lucide-react";
 import type { AiResult } from "@/types";
 
 const CONDITION_COLOR: Record<string, string> = {
@@ -82,13 +83,11 @@ export default function HistoryClient() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
-      <div className="sticky top-0 bg-white border-b border-slate-200 z-10 px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="text-slate-500 hover:text-slate-800">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+      <div className="sticky top-0 bg-white/85 backdrop-blur-xl border-b border-slate-200/70 z-10 px-4 py-3 flex items-center gap-3">
+        <Link href="/" className="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors">
+          <ChevronLeft size={22} />
         </Link>
-        <h1 className="font-bold text-slate-800">スキャン履歴</h1>
+        <h1 className="font-bold text-slate-800 tracking-tight">スキャン履歴</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
@@ -115,15 +114,17 @@ export default function HistoryClient() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
-            <p className="text-4xl mb-3">📷</p>
-            <p>{filter === "all" ? "まだスキャン履歴がありません" : "該当する履歴がありません"}</p>
+            <span className="inline-flex w-16 h-16 bg-slate-100 rounded-3xl items-center justify-center mb-3">
+              <Camera size={28} className="text-slate-300" />
+            </span>
+            <p className="text-sm font-medium">{filter === "all" ? "まだスキャン履歴がありません" : "該当する履歴がありません"}</p>
           </div>
         ) : (
           filtered.map((scan) => {
             const ai = scan.aiResult;
             const date = new Date(scan.createdAt).toLocaleDateString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
             return (
-              <div key={scan.id} className="bg-white rounded-2xl shadow-sm p-4">
+              <div key={scan.id} className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-4">
                 <div className="flex gap-3 cursor-pointer" onClick={() => reopen(scan)}>
                   {scan.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -173,26 +174,28 @@ export default function HistoryClient() {
                 <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-slate-50">
                   <button
                     onClick={() => patch(scan.id, { isFavorite: !scan.isFavorite })}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    className={`p-2 rounded-lg transition-colors ${
                       scan.isFavorite ? "text-yellow-500" : "text-slate-300 hover:text-yellow-400"
                     }`}
                     aria-label="お気に入り"
                   >
-                    ★
+                    <Star size={17} fill={scan.isFavorite ? "currentColor" : "none"} />
                   </button>
                   <button
                     onClick={() => patch(scan.id, { isPurchased: !scan.isPurchased })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                       scan.isPurchased ? "text-green-600" : "text-slate-400 hover:text-green-500"
                     }`}
                   >
+                    <ShoppingCart size={14} />
                     {scan.isPurchased ? "仕入れ取消" : "仕入れた"}
                   </button>
                   <button
                     onClick={() => remove(scan.id)}
-                    className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-red-500 transition-colors"
+                    className="p-2 rounded-lg text-slate-300 hover:text-red-500 transition-colors"
+                    aria-label="削除"
                   >
-                    削除
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>

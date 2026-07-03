@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   title: "フリマスキャナー",
   description: "中古品を撮影して相場と転売利益を即チェック",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
