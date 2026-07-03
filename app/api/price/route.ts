@@ -4,6 +4,9 @@ import { priceCache } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { PriceData } from "@/types";
 
+// ヤフオクは海外IPからのアクセスを弾くため東京リージョンで実行する
+export const preferredRegion = "hnd1";
+
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24時間
 
 const UA =
