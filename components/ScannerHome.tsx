@@ -137,9 +137,11 @@ export default function ScannerHome() {
         ))}
       </div>
 
-      <Link href="/history" className="mt-8 text-sm text-slate-400 hover:text-orange-500 transition-colors">
-        スキャン履歴を見る →
-      </Link>
+      <div className="mt-8 flex items-center gap-4 text-sm text-slate-400">
+        <Link href="/history" className="hover:text-orange-500 transition-colors">履歴</Link>
+        <span>|</span>
+        <Link href="/dashboard" className="hover:text-orange-500 transition-colors">収支ダッシュボード</Link>
+      </div>
     </main>
   );
 }

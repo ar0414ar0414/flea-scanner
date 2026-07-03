@@ -46,6 +46,15 @@ export const PLATFORM_FEES: Record<string, { label: string; fee: number }> = {
   rakuma:     { label: "ラクマ",        fee: 0.06 },
 };
 
+// ヤフオク落札相場に対する各プラットフォームの想定出品価格倍率
+// （固定価格サービスは競り上がりがないぶん高め設定が通りやすい）
+export const PLATFORM_PRICE_RATIO: Record<string, { label: string; ratio: number; color: string }> = {
+  yahoo:   { label: "ヤフオク",      ratio: 1.00, color: "text-slate-700" },
+  mercari: { label: "メルカリ",      ratio: 1.15, color: "text-red-600"   },
+  paypay:  { label: "PayPayフリマ",  ratio: 1.10, color: "text-yellow-600"},
+  rakuma:  { label: "ラクマ",        ratio: 0.95, color: "text-blue-600"  },
+};
+
 // コンディション別相場補正
 export const CONDITION_MULTIPLIER: Record<string, number> = {
   S: 1.3,

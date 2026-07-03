@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { calcProfits } from "@/lib/profit";
 import { suggestShipping } from "@/lib/shipping";
+import { calcBuyScore, type BuyScore } from "@/lib/buyScore";
 import type { AiResult, PriceData, PlatformProfit } from "@/types";
-import { CONDITION_MULTIPLIER } from "@/types";
+import { CONDITION_MULTIPLIER, PLATFORM_PRICE_RATIO } from "@/types";
 
 const CONDITION_LABEL: Record<string, string> = {
   S: "S - 未使用・新品同様",
@@ -33,6 +34,7 @@ export default function ResultClient() {
   const [purchasePrice, setPurchasePrice] = useState("");
   const [shippingCost, setShippingCost] = useState("500");
   const [profits, setProfits] = useState<PlatformProfit[]>([]);
+  const [buyScore, setBuyScore] = useState<BuyScore | null>(null);
 
   // save state
   const [saving, setSaving] = useState(false);
@@ -101,7 +103,13 @@ export default function ResultClient() {
     const base = priceData.median;
     const purchase = parseInt(purchasePrice) || 0;
     const shipping = parseInt(shippingCost) || 0;
-    setProfits(calcProfits(base, editCondition, purchase, shipping));
+    const newProfits = calcProfits(base, editCondition, purchase, shipping);
+    setProfits(newProfits);
+    if (purchase > 0) {
+      setBuyScore(calcBuyScore(priceData, editCondition, newProfits, purchase));
+    } else {
+      setBuyScore(null);
+    }
   }, [priceData, aiResult, editCondition, purchasePrice, shippingCost]);
 
   const applyEdit = () => {
@@ -118,6 +126,18 @@ export default function ResultClient() {
   const adjustedPrice = priceData
     ? Math.round(priceData.median * (CONDITION_MULTIPLIER[aiResult.condition] ?? 1))
     : null;
+
+  const platformPrices = priceData
+    ? Object.values(PLATFORM_PRICE_RATIO).map(({ label, ratio, color }) => ({
+        label,
+        color,
+        price: Math.round(priceData.median * (CONDITION_MULTIPLIER[editCondition] ?? 1) * ratio),
+      }))
+    : [];
+
+  const GRADE_COLOR: Record<string, string> = {
+    S: "bg-purple-500", A: "bg-blue-500", B: "bg-green-500", C: "bg-yellow-500", D: "bg-red-500",
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
@@ -263,6 +283,24 @@ export default function ResultClient() {
           ) : null}
         </div>
 
+        {/* ⑤ プラットフォーム別推定相場カード */}
+        {platformPrices.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <h2 className="font-bold text-slate-700 mb-1 flex items-center gap-2">
+              <span>🏪</span> プラットフォーム別推定相場
+            </h2>
+            <p className="text-xs text-slate-400 mb-3">ヤフオク落札実績を基準とした出品価格の目安</p>
+            <div className="grid grid-cols-2 gap-2">
+              {platformPrices.map(({ label, price, color }) => (
+                <div key={label} className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+                  <p className={`font-bold text-sm ${color}`}>¥{price.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 利益計算カード */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -318,6 +356,39 @@ export default function ResultClient() {
             </div>
           )}
         </div>
+
+        {/* ⑧ 買い時スコアカード */}
+        {buyScore && (
+          <div className="bg-white rounded-2xl shadow-sm p-4">
+            <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+              <span>🎯</span> 買い時スコア
+            </h2>
+            <div className="flex items-center gap-4 mb-3">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-black flex-shrink-0 ${GRADE_COLOR[buyScore.grade]}`}>
+                {buyScore.grade}
+              </div>
+              <div>
+                <p className="font-bold text-slate-800">{buyScore.label}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${GRADE_COLOR[buyScore.grade]} transition-all`}
+                      style={{ width: `${buyScore.score}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500 w-10 text-right">{buyScore.score}/100</span>
+                </div>
+              </div>
+            </div>
+            <ul className="space-y-1">
+              {buyScore.reasons.map((r, i) => (
+                <li key={i} className="text-xs text-slate-500 flex items-start gap-1.5">
+                  <span className="text-orange-400 mt-0.5">•</span>{r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* アクションボタン */}
         <div className="flex gap-3">
