@@ -27,11 +27,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { aiResult, priceData, medianPrice, purchasePrice, shippingCost, profit, profitRate } = payload;
+    const { aiResult, priceData, medianPrice, purchasePrice, shippingCost, profit, profitRate, buyScore } = payload;
 
     const [scan] = await db.insert(scans).values({
       aiResult,
       priceData,
+      buyScore: buyScore ?? null,
       medianPrice: medianPrice ?? null,
       purchasePrice: purchasePrice ?? null,
       shippingCost: shippingCost ?? null,

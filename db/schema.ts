@@ -19,6 +19,7 @@ export const scans = pgTable("scans", {
   shippingCost: integer("shipping_cost"),
   profit: integer("profit"),
   profitRate: real("profit_rate"),
+  buyScore: jsonb("buy_score"),       // 買い時スコア { score, grade, label, reasons }
   isPurchased: boolean("is_purchased").default(false).notNull(),
   isFavorite: boolean("is_favorite").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

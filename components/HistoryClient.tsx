@@ -20,9 +20,18 @@ type Scan = {
   medianPrice: number | null;
   purchasePrice: number | null;
   profit: number | null;
+  buyScore: { score: number; grade: string; label: string } | null;
   isPurchased: boolean;
   isFavorite: boolean;
   createdAt: string;
+};
+
+const GRADE_BADGE: Record<string, string> = {
+  S: "bg-purple-500 text-white",
+  A: "bg-blue-500 text-white",
+  B: "bg-green-500 text-white",
+  C: "bg-yellow-500 text-white",
+  D: "bg-red-500 text-white",
 };
 
 type Filter = "all" | "favorite" | "purchased";
@@ -129,6 +138,11 @@ export default function HistoryClient() {
                           {ai?.condition && (
                             <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${CONDITION_COLOR[ai.condition] ?? ""}`}>
                               {ai.condition}
+                            </span>
+                          )}
+                          {scan.buyScore && (
+                            <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${GRADE_BADGE[scan.buyScore.grade] ?? ""}`}>
+                              買い時{scan.buyScore.grade}
                             </span>
                           )}
                           {scan.isPurchased && (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { calcProfits } from "@/lib/profit";
+import { calcProfits, calcBreakeven } from "@/lib/profit";
 import { suggestShipping } from "@/lib/shipping";
 import { calcBuyScore, type BuyScore } from "@/lib/buyScore";
 import { toast } from "@/lib/toast";
@@ -58,6 +58,7 @@ export default function ResultClient() {
         shippingCost: parseInt(shippingCost) || null,
         profit: bestProfit?.profit ?? null,
         profitRate: bestProfit?.profitRate ?? null,
+        buyScore,
       }));
       // blob URL は同一セッション内なら再取得できる
       if (imageUrl?.startsWith("blob:")) {
@@ -156,6 +157,10 @@ export default function ResultClient() {
 
   const adjustedPrice = priceData
     ? Math.round(priceData.median * (CONDITION_MULTIPLIER[aiResult.condition] ?? 1))
+    : null;
+
+  const breakeven = priceData
+    ? calcBreakeven(priceData.median, editCondition, parseInt(shippingCost) || 0)
     : null;
 
   const platformPrices = priceData
@@ -363,6 +368,32 @@ export default function ResultClient() {
           <h2 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
             <span>💴</span> 利益計算
           </h2>
+
+          {/* ⑬ 仕入れ上限の目安 */}
+          {breakeven && (
+            <div className="bg-orange-50 rounded-xl p-3 mb-4">
+              <p className="text-xs font-medium text-orange-600 mb-2">
+                💡 仕入れ上限の目安（{breakeven.platform}で売る場合・タップで入力）
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setPurchasePrice(String(breakeven.target30))}
+                  className="bg-white rounded-lg p-2 text-center hover:ring-2 hover:ring-orange-300 transition-all"
+                >
+                  <p className="text-xs text-slate-400">利益率30%確保</p>
+                  <p className="font-bold text-green-600">¥{breakeven.target30.toLocaleString()} 以下</p>
+                </button>
+                <button
+                  onClick={() => setPurchasePrice(String(breakeven.breakeven))}
+                  className="bg-white rounded-lg p-2 text-center hover:ring-2 hover:ring-orange-300 transition-all"
+                >
+                  <p className="text-xs text-slate-400">損益分岐点</p>
+                  <p className="font-bold text-slate-700">¥{breakeven.breakeven.toLocaleString()}</p>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3 mb-4">
             <div className="flex items-center gap-3">
               <label className="text-sm text-slate-600 w-24 flex-shrink-0">仕入値</label>
