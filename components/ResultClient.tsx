@@ -318,6 +318,11 @@ export default function ResultClient() {
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-2 text-right">{priceData.count}件の落札実績</p>
+              {aiResult && priceData.keyword !== aiResult.searchQuery && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mt-2">
+                  元のキーワードでは0件のため「{priceData.keyword}」で再検索した結果です
+                </p>
+              )}
 
               {/* 落札実績リスト */}
               {priceData.items?.length > 0 && (

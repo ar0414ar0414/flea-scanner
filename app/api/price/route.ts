@@ -19,6 +19,7 @@ type ClosedItem = { title?: string; price?: number; auctionId?: string };
 async function fetchClosedAuctions(keyword: string): Promise<{ title: string; price: number; url: string }[]> {
   const url = `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(keyword)}&n=20`;
   const res = await fetch(url, { headers: { "User-Agent": UA }, cache: "no-store" });
+  if (res.status === 404) return []; // ヒット0件時はページ自体が404を返す
   if (!res.ok) throw new Error(`closedsearch HTTP ${res.status}`);
   const html = await res.text();
 
@@ -51,9 +52,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  let items: { title: string; price: number; url: string }[];
+  // 0件なら末尾の語を削りながら段階的に広く再検索（最大4候補）
+  const words = keyword.split(/\s+/).filter(Boolean);
+  const candidates: string[] = [];
+  for (let n = words.length; n >= 1 && candidates.length < 4; n--) {
+    candidates.push(words.slice(0, n).join(" "));
+  }
+
+  let items: { title: string; price: number; url: string }[] = [];
+  let usedKeyword = keyword;
   try {
-    items = await fetchClosedAuctions(keyword);
+    for (const q of candidates) {
+      items = await fetchClosedAuctions(q);
+      if (items.length > 0) {
+        usedKeyword = q;
+        break;
+      }
+    }
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "相場データの取得に失敗しました" }, { status: 502 });
@@ -82,7 +97,7 @@ export async function GET(req: NextRequest) {
 
   const priceData: PriceData = {
     platform: "yahoo_auction",
-    keyword,
+    keyword: usedKeyword,
     median,
     min: prices[0],
     max: prices[prices.length - 1],
