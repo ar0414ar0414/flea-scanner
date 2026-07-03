@@ -39,6 +39,22 @@ async function fetchClosedAuctions(keyword: string): Promise<{ title: string; pr
     }));
 }
 
+// ヤフオクの曖昧一致で混入する無関係商品を、タイトルとキーワードの一致度で除去
+function filterByRelevance(
+  items: { title: string; price: number; url: string }[],
+  keyword: string,
+) {
+  const tokens = keyword.normalize("NFKC").toLowerCase().split(/\s+/).filter((t) => t.length >= 2);
+  if (tokens.length === 0) return items;
+  const scored = items.filter((i) => {
+    const title = i.title.normalize("NFKC").toLowerCase();
+    const matched = tokens.filter((t) => title.includes(t)).length;
+    return matched / tokens.length >= 0.5;
+  });
+  // 一致品が1件もない場合のみ元のリストを使う（Yahoo側の関連結果）
+  return scored.length > 0 ? scored : items;
+}
+
 export async function GET(req: NextRequest) {
   const keyword = req.nextUrl.searchParams.get("q");
   if (!keyword) return NextResponse.json({ error: "キーワードが必要です" }, { status: 400 });
@@ -63,7 +79,7 @@ export async function GET(req: NextRequest) {
   let usedKeyword = keyword;
   try {
     for (const q of candidates) {
-      items = await fetchClosedAuctions(q);
+      items = filterByRelevance(await fetchClosedAuctions(q), q);
       if (items.length > 0) {
         usedKeyword = q;
         break;
