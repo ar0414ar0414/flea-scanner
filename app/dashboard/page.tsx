@@ -51,7 +51,7 @@ export default async function DashboardPage() {
   const overallRate = totalPurchase > 0 ? Math.round((totalProfit / totalPurchase) * 100) : 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-10">
+    <main className="min-h-screen bg-slate-50 pb-24">
       <div className="sticky top-0 bg-white border-b border-slate-200 z-10 px-4 py-3 flex items-center gap-3">
         <Link href="/" className="text-slate-500 hover:text-slate-800">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

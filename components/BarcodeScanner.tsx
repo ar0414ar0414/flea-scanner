@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { toast } from "@/lib/toast";
 
 interface Props {
   onClose: () => void;
@@ -40,7 +41,7 @@ export default function BarcodeScanner({ onClose }: Props) {
         sessionStorage.removeItem("imageUrl");
         router.push("/result");
       } catch {
-        alert("商品情報の取得に失敗しました");
+        toast("商品情報の取得に失敗しました", "error");
         stopped = false;
         setStatus("scanning");
       }

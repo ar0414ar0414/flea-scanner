@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import Toaster from "@/components/Toaster";
+import TabBar from "@/components/TabBar";
 import "./globals.css";
 
 const noto = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "700"] });
@@ -27,6 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja" className="h-full">
       <body className={`${noto.className} min-h-full bg-slate-50 text-slate-900`}>
         {children}
+        <TabBar />
+        <Toaster />
       </body>
     </html>
   );

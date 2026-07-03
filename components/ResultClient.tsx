@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { calcProfits } from "@/lib/profit";
 import { suggestShipping } from "@/lib/shipping";
 import { calcBuyScore, type BuyScore } from "@/lib/buyScore";
+import { toast } from "@/lib/toast";
 import type { AiResult, PriceData, PlatformProfit } from "@/types";
 import { CONDITION_MULTIPLIER, PLATFORM_PRICE_RATIO } from "@/types";
 
@@ -65,10 +66,12 @@ export default function ResultClient() {
       }
       const res = await fetch("/api/scans", { method: "POST", body: form });
       const data = await res.json();
-      if (data.id) setSavedId(data.id);
-      else alert("保存に失敗しました");
+      if (data.id) {
+        setSavedId(data.id);
+        toast("履歴に保存しました", "success");
+      } else toast("保存に失敗しました", "error");
     } catch {
-      alert("保存に失敗しました");
+      toast("保存に失敗しました", "error");
     } finally {
       setSaving(false);
     }

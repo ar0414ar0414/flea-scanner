@@ -3,23 +3,36 @@
 import { useRef, useState, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
-import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 const BarcodeScanner = lazy(() => import("./BarcodeScanner"));
+
+type Step = "compress" | "analyze";
+
+const STEPS: { key: Step; icon: string; label: string }[] = [
+  { key: "compress", icon: "📸", label: "画像を圧縮中" },
+  { key: "analyze", icon: "🤖", label: "AIがブランド・状態を識別中" },
+];
 
 export default function ScannerHome() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<Step | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showBarcode, setShowBarcode] = useState(false);
+  const loading = step !== null;
 
   const handleFile = async (file: File) => {
-    setLoading(true);
+    if (!navigator.onLine) {
+      toast("オフラインのためAI解析できません", "error");
+      return;
+    }
+    setStep("compress");
     try {
       const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024 });
       const url = URL.createObjectURL(compressed);
       setPreview(url);
+      setStep("analyze");
 
       const form = new FormData();
       form.append("image", compressed);
@@ -34,14 +47,14 @@ export default function ScannerHome() {
       router.push("/result");
     } catch (e) {
       console.error(e);
-      alert("識別に失敗しました。もう一度試してください。");
-      setLoading(false);
+      toast("識別に失敗しました。もう一度試してください。", "error");
+      setStep(null);
       setPreview(null);
     }
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 pb-12">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 pb-24">
       {showBarcode && (
         <Suspense fallback={null}>
           <BarcodeScanner onClose={() => setShowBarcode(false)} />
@@ -66,9 +79,33 @@ export default function ScannerHome() {
           }`}
       >
         {loading ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
-            <p className="text-orange-600 font-medium text-sm">AI解析中...</p>
+          <div className="relative w-full h-full">
+            {preview && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="preview" className="w-full h-full object-cover rounded-3xl opacity-40" />
+            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              {STEPS.map(({ key, icon, label }) => {
+                const currentIdx = STEPS.findIndex((s) => s.key === step);
+                const idx = STEPS.findIndex((s) => s.key === key);
+                const done = idx < currentIdx;
+                const active = key === step;
+                return (
+                  <div key={key} className={`flex items-center gap-3 transition-opacity ${done || active ? "opacity-100" : "opacity-30"}`}>
+                    <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-base shadow-sm flex-shrink-0">
+                      {done ? "✅" : icon}
+                    </span>
+                    <span className={`text-sm font-medium ${active ? "text-orange-600" : "text-slate-500"}`}>
+                      {label}
+                      {active && <span className="inline-block ml-1 animate-pulse">...</span>}
+                    </span>
+                    {active && (
+                      <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : preview ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -137,11 +174,6 @@ export default function ScannerHome() {
         ))}
       </div>
 
-      <div className="mt-8 flex items-center gap-4 text-sm text-slate-400">
-        <Link href="/history" className="hover:text-orange-500 transition-colors">履歴</Link>
-        <span>|</span>
-        <Link href="/dashboard" className="hover:text-orange-500 transition-colors">収支ダッシュボード</Link>
-      </div>
     </main>
   );
 }
