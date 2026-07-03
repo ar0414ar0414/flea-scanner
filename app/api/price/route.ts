@@ -19,7 +19,7 @@ async function fetchClosedAuctions(keyword: string): Promise<{ title: string; pr
   if (!res.ok) throw new Error(`closedsearch HTTP ${res.status}`);
   const html = await res.text();
 
-  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s);
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   if (!m) throw new Error("NEXT_DATA not found");
 
   const data = JSON.parse(m[1]);
