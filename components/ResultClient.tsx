@@ -38,16 +38,18 @@ export default function ResultClient() {
 
   // save state
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [purchased, setPurchased] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const saved = savedId !== null;
 
   const saveScan = async () => {
     if (!aiResult || saving || saved) return;
     setSaving(true);
-    const bestProfit = profits.reduce((best, p) => p.profit > best.profit ? p : best, profits[0]);
-    await fetch("/api/scans", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const bestProfit = profits.reduce((best, p) => p.profit > best.profit ? p : best, profits[0]);
+      const form = new FormData();
+      form.append("payload", JSON.stringify({
         aiResult,
         priceData,
         medianPrice: priceData?.median ?? null,
@@ -55,11 +57,37 @@ export default function ResultClient() {
         shippingCost: parseInt(shippingCost) || null,
         profit: bestProfit?.profit ?? null,
         profitRate: bestProfit?.profitRate ?? null,
-        imageUrl,
-      }),
-    });
-    setSaving(false);
-    setSaved(true);
+      }));
+      // blob URL は同一セッション内なら再取得できる
+      if (imageUrl?.startsWith("blob:")) {
+        const blob = await fetch(imageUrl).then((r) => r.blob());
+        form.append("image", blob, "scan.jpg");
+      }
+      const res = await fetch("/api/scans", { method: "POST", body: form });
+      const data = await res.json();
+      if (data.id) setSavedId(data.id);
+      else alert("保存に失敗しました");
+    } catch {
+      alert("保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const togglePurchased = async () => {
+    if (!savedId || purchasing) return;
+    setPurchasing(true);
+    const next = !purchased;
+    try {
+      const res = await fetch(`/api/scans/${savedId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPurchased: next, purchasePrice: parseInt(purchasePrice) || 0 }),
+      });
+      if (res.ok) setPurchased(next);
+    } finally {
+      setPurchasing(false);
+    }
   };
 
   // edit state
@@ -279,6 +307,32 @@ export default function ResultClient() {
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-2 text-right">{priceData.count}件の落札実績</p>
+
+              {/* 落札実績リスト */}
+              {priceData.items?.length > 0 && (
+                <details className="mt-3 border-t border-slate-100 pt-3">
+                  <summary className="text-sm text-slate-500 cursor-pointer select-none hover:text-orange-500 transition-colors">
+                    実際の落札例を見る（{priceData.items.length}件）
+                  </summary>
+                  <ul className="mt-2 space-y-2">
+                    {priceData.items.map((item, i) => (
+                      <li key={i}>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-3 py-2 hover:bg-orange-50 transition-colors"
+                        >
+                          <span className="text-xs text-slate-600 truncate flex-1">{item.title}</span>
+                          <span className="text-sm font-bold text-slate-700 flex-shrink-0">
+                            ¥{item.price.toLocaleString()}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </>
           ) : null}
         </div>
@@ -388,6 +442,21 @@ export default function ResultClient() {
               ))}
             </ul>
           </div>
+        )}
+
+        {/* 仕入れたトグル（保存後に表示） */}
+        {saved && (
+          <button
+            onClick={togglePurchased}
+            disabled={purchasing}
+            className={`w-full py-3.5 font-bold rounded-2xl transition-colors border-2 ${
+              purchased
+                ? "border-green-500 bg-green-500 text-white"
+                : "border-green-400 text-green-600 bg-white hover:bg-green-50"
+            }`}
+          >
+            {purchased ? "仕入れ済み ✓（タップで取消）" : "🛒 この商品を仕入れた"}
+          </button>
         )}
 
         {/* アクションボタン */}
